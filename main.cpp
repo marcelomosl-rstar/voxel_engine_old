@@ -1,7 +1,117 @@
-
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+
+struct ShaderProgramSource
+{
+    std::string VertexSource;
+    std::string FragmentSource;
+};
+
+static unsigned int CreateShader(const std::string &vertexShader, const std::string &fragmentShader);
+
+static unsigned int CompileShader(unsigned int type, const std::string &source);
+
+static ShaderProgramSource ParseShader(const std::string &filePath);
+
+int main(void)
+{
+    GLFWwindow *window;
+
+    /* Initialize the library */
+    if (!glfwInit())
+        return -1;
+
+    /* Create a windowed mode window and its OpenGL context */
+    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Marcelo's Voxel Engine", NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        return -1;
+    }
+
+    /* Make the window's context current */
+    glfwMakeContextCurrent(window);
+
+    // Initialize GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    // Check the version of the OpenGL
+    // std::cout << glGetString(GL_VERSION) << std::endl;
+
+    float positions[6]{
+        0.0f,  // X
+        0.5f,  // Y
+        -0.5f, // X
+        -0.5f, // Y
+        0.5f,  // X
+        -0.5f, // Y
+    };
+
+    unsigned int myBuffer;
+    glGenBuffers(1, &myBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, myBuffer);
+    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+
+    ShaderProgramSource source = ParseShader("res/shaders/basic.shader");
+
+    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
+    glUseProgram(shader);
+
+    /* Loop until the user closes the window */
+    while (!glfwWindowShouldClose(window))
+    {
+        /* Render here */
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // Draw the triangle using buffer
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
+
+        /* Swap front and back buffers */
+        glfwSwapBuffers(window);
+
+        /* Poll for and process events */
+        glfwPollEvents();
+    }
+
+    glDeleteProgram(shader);
+
+    glfwTerminate();
+    return 0;
+}
+
+static unsigned int CreateShader(const std::string &vertexShader, const std::string &fragmentShader)
+{
+    unsigned int program = glCreateProgram();
+    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
+    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+
+    glLinkProgram(program);
+
+    glValidateProgram(program);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    return program;
+};
 
 static unsigned int CompileShader(unsigned int type, const std::string &source)
 {
@@ -38,118 +148,46 @@ static unsigned int CompileShader(unsigned int type, const std::string &source)
     return id;
 }
 
-static unsigned int CreateShader(const std::string &vertexShader, const std::string &fragmentShader)
+static ShaderProgramSource ParseShader(const std::string &filePath)
 {
-    unsigned int program = glCreateProgram();
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    std::ifstream stream(filePath);
 
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-
-    glValidateProgram(program);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    return program;
-};
-
-int main(void)
-{
-    GLFWwindow *window;
-
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
+    if (!stream.is_open())
     {
-        glfwTerminate();
-        return -1;
+        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+        return {"", ""}; // Return empty ShaderProgramSource if file cannot be opened
     }
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-
-    // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    enum class ShaderType
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
-
-    // Check the version of the OpenGL
-    // std::cout << glGetString(GL_VERSION) << std::endl;
-
-    float positions[6]{
-        0.0f,
-        0.5f,
-        -0.5f,
-        -0.5f,
-        0.5f,
-        -0.5f,
+        NONE = -1,
+        VERTEX = 0,
+        FRAGMENT = 1
     };
 
-    unsigned int myBuffer;
-    glGenBuffers(1, &myBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, myBuffer);
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+    std::string line;
+    std::stringstream ss[2];
+    ShaderType type = ShaderType::NONE;
 
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-
-    std::string vertexShader =
-        "#version 330 core\n"
-        "layout(location = 0) in vec4 position;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        " gl_Position = position;\n"
-        "}\n";
-
-    std::string fragmentShader =
-        "#version 330 core\n"
-        "layout(location = 0) out vec4 color;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        " color = vec4(1.0, 0.0, 0.0, 1.0);\n"
-        "}\n";
-
-    unsigned int shader = CreateShader(vertexShader, fragmentShader);
-    glUseProgram(shader);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
+    while (getline(stream, line))
     {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw Triangle
-        // glBegin(GL_TRIANGLES);
-        // glVertex2f(0.0f, 0.5f);
-        // glVertex2f(-0.5f, -0.5f);
-        // glVertex2f(0.5f, -0.5f);
-        // glEnd();
+        if (line.find("#shader") != std::string::npos)
+        {
+            if (line.find("vertex") != std::string::npos)
+            {
+                type = ShaderType::VERTEX;
+            }
+            else if (line.find("fragment") != std::string::npos)
+            {
+                type = ShaderType::FRAGMENT;
+            }
+        }
+        else
+        {
 
-        // Draw the triangle using buffer
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
+            ss[(int)type] << line << "\n";
+        }
     }
-
-    glDeleteProgram(shader);
-
-    glfwTerminate();
-    return 0;
-}
+    return {ss[0].str(), ss[1].str()};
+};
