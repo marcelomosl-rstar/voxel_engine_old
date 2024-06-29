@@ -1,0 +1,8 @@
+C:\dev\voxel_engine\src\OpenGL\EBO.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\EBO.obj
+C:\dev\voxel_engine\src\Shaders\Shader.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\Shader.obj
+C:\dev\voxel_engine\src\OpenGL\VAO.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\VAO.obj
+C:\dev\voxel_engine\src\OpenGL\VBO.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\VBO.obj
+C:\dev\voxel_engine\src\glad.c;C:\dev\voxel_engine\voxel_engine\x64\Debug\glad.obj
+C:\dev\voxel_engine\src\Main.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\Main.obj
+C:\dev\voxel_engine\src\Shaders\Texture.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\Texture.obj
+C:\dev\voxel_engine\Stb.cpp;C:\dev\voxel_engine\voxel_engine\x64\Debug\Stb.obj
